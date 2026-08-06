@@ -55,6 +55,11 @@ The signature covers the baseline route, input ticks, finish tick, and signer
 metadata. Later route adaptations, scores, medals, streaks, and PB Echoes are
 local game state and are not signed.
 
+![Verified Rival DNA, previewSign and ARKG evidence, and a one-tick edit rejected locally](docs/images/ghost-lap-tamper-rejected.png)
+
+*Changing one accepted input from 1.32s to 1.34s breaks the signed replay
+binding and is rejected locally without contacting the YubiKey.*
+
 ## Setup & run instructions
 
 You need [`uv`](https://docs.astral.sh/uv/), one USB YubiKey 5.8 with a FIDO2
