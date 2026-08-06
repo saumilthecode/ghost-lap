@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Ghost Lap rabbit</title>
+  <rect x="2" y="2" width="60" height="60" rx="17" fill="#c9e7e5" stroke="#344057" stroke-width="3"/>
+  <g stroke="#344057" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M23 46C15 45 12 50 7 48M24 50C16 51 14 56 9 55" fill="none" stroke="#efbd55" stroke-width="5"/>
+    <ellipse cx="17" cy="45" rx="8" ry="7" fill="#fff2dc" stroke-width="2.5"/>
+    <ellipse cx="28" cy="47" rx="17" ry="13" fill="#ef7962" stroke-width="2.8"/>
+    <g transform="rotate(-28 28 23)">
+      <ellipse cx="28" cy="15" rx="7" ry="15" fill="#ef7962" stroke-width="2.8"/>
+      <ellipse cx="28" cy="14" rx="2.6" ry="10" fill="#f8b09a" stroke="none"/>
+    </g>
+    <g transform="rotate(7 38 22)">
+      <ellipse cx="38" cy="14" rx="7.2" ry="16" fill="#ef7962" stroke-width="2.8"/>
+      <ellipse cx="38" cy="13" rx="2.7" ry="11" fill="#f8b09a" stroke="none"/>
+    </g>
+    <ellipse cx="39" cy="38" rx="18" ry="16" fill="#ef7962" stroke-width="2.8"/>
+    <ellipse cx="44" cy="42" rx="10" ry="7" fill="#f58d78" stroke="none"/>
+    <ellipse cx="43" cy="34" rx="3.5" ry="4.1" fill="#344057" stroke="none"/>
+    <circle cx="42" cy="32.8" r="1.15" fill="#fffaf0" stroke="none"/>
+    <circle cx="54.5" cy="40" r="2.3" fill="#c9535e" stroke="none"/>
+    <path d="M53 43C50 47 46 47 44 44" fill="none" stroke-width="1.8"/>
+    <ellipse cx="39" cy="50" rx="8" ry="4.2" transform="rotate(-20 39 50)" fill="#ef7962" stroke-width="2.2"/>
+    <ellipse cx="21" cy="45" rx="5.4" ry="4.5" transform="rotate(-12 21 45)" fill="#efbd55" stroke-width="2"/>
+  </g>
+</svg>
