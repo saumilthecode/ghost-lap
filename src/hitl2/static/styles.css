@@ -940,6 +940,120 @@ summary:focus-visible {
   line-height: 1.4;
 }
 
+.pin-guide {
+  min-width: 0;
+}
+
+.pin-guide-lead {
+  margin: 0 0 11px;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.pin-guide-lead strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.96rem;
+}
+
+.pin-guide-steps {
+  margin: 0;
+  padding-left: 22px;
+  font-size: 0.79rem;
+  line-height: 1.45;
+}
+
+.pin-guide-steps > li + li {
+  margin-top: 9px;
+}
+
+.pin-guide kbd {
+  padding: 1px 5px;
+  background: white;
+  border: 1px solid rgba(52, 64, 87, 0.45);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  font: 700 0.72rem ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+
+.pin-command-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 7px;
+}
+
+.pin-command {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 7px 7px 10px;
+  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid rgba(52, 64, 87, 0.36);
+  border-radius: 8px;
+}
+
+.pin-command > span {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.pin-command code {
+  overflow-x: auto;
+  padding: 3px 0;
+  font-size: 0.69rem;
+  white-space: nowrap;
+}
+
+.pin-command button {
+  min-height: 44px;
+  padding: 5px 9px;
+  color: var(--ink);
+  background: var(--sky);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.69rem;
+  font-weight: 900;
+}
+
+.pin-guide-safety {
+  margin: 11px 0 0;
+  padding: 8px 10px;
+  color: var(--danger);
+  background: rgba(239, 121, 98, 0.09);
+  border-left: 3px solid var(--coral);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.pin-guide-alternative {
+  margin-top: 9px;
+  font-size: 0.72rem;
+}
+
+.pin-guide-alternative summary {
+  width: fit-content;
+  font-weight: 900;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pin-guide-alternative p {
+  margin: 7px 0 4px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.pin-guide-alternative a {
+  color: var(--leaf);
+  font-weight: 900;
+}
+
 .setup-form label {
   display: block;
   margin-bottom: 7px;
@@ -1488,6 +1602,18 @@ summary:focus-visible {
 
   .setup-form {
     margin-top: 17px;
+  }
+
+  .pin-guide {
+    margin-top: 17px;
+  }
+
+  .pin-command {
+    grid-template-columns: 1fr auto;
+  }
+
+  .pin-command > span {
+    grid-column: 1 / -1;
   }
 
   .setup-fields,

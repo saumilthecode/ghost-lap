@@ -57,8 +57,9 @@ local game state and are not signed.
 
 ## Setup & run instructions
 
-You need Python 3.11+, [`uv`](https://docs.astral.sh/uv/), one USB YubiKey 5.8
-with a FIDO2 PIN, and a current desktop browser.
+You need [`uv`](https://docs.astral.sh/uv/), one USB YubiKey 5.8 with a FIDO2
+PIN, and a current desktop browser. `uv` installs compatible Python if needed
+and fetches the locked dependencies on first launch.
 
 macOS or Linux:
 
@@ -72,7 +73,8 @@ Windows PowerShell:
 .\scripts\run-local.ps1
 ```
 
-Then open <http://localhost:8788> and:
+The launcher downloads the locked Python environment and opens
+<http://localhost:8788> when the server is ready. Then:
 
 1. Connect exactly one compatible YubiKey.
 2. Enroll Ghost Lap with your PIN and a touch.
@@ -84,8 +86,9 @@ system's HID path, so there is no browser “connect to YubiKey” popup. Linux 
 need FIDO udev permissions; Windows may require an Administrator PowerShell for
 direct HID access. This prototype is desktop USB only, not mobile or NFC.
 
-If the key has no FIDO2 PIN, configure one with an authenticator management
-tool first. Leave other security keys unplugged while doing so.
+If the key has no FIDO2 PIN, the setup card provides Yubico Authenticator
+instructions and copyable one-time launcher commands. Normal launches cannot
+set an initial FIDO PIN, and Ghost Lap never changes an existing PIN.
 
 To play without hardware, start the clearly labelled software practice mode:
 
@@ -108,19 +111,6 @@ To play without hardware, start the clearly labelled software practice mode:
 
 The deterministic runner uses fixed 20 ms ticks and stores inputs rather than
 per-frame positions.
-
-## Learnings
-
-- `previewSign` can authorize application data while a normal WebAuthn assertion
-  adds RP/origin binding, user presence, and user verification.
-- ARKG can give each signed object a fresh derived key without storing another
-  ordinary signing key on the authenticator.
-- The firmware signs a digest, while ESP256 verification checks the original
-  payload bytes; hashing the digest again is an easy implementation mistake.
-- Replay protection is contextual: a rival is valuable precisely because its
-  verified input tape can be replayed.
-- Cryptographic authenticity proves the payload was not edited. It does not
-  prove that an untrusted game client simulated or recorded the lap honestly.
 
 ## Security boundary
 

@@ -10,8 +10,8 @@
     />
     <title>Ghost Lap</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="/styles.css?v=ghost-lap-21" />
-    <script src="/app.js?v=ghost-lap-21" defer></script>
+    <link rel="stylesheet" href="/styles.css?v=ghost-lap-22" />
+    <script src="/app.js?v=ghost-lap-22" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#game">Skip to the game</a>
@@ -170,12 +170,41 @@
           <p id="setup-description">Checking the connected authenticator.</p>
         </div>
 
+        <div class="pin-guide" id="pin-guide" hidden>
+          <p class="pin-guide-lead"><strong>Restart once in PIN setup mode.</strong> The normal launcher cannot set an initial FIDO PIN.</p>
+          <ol class="pin-guide-steps">
+            <li>In the terminal running Ghost Lap, press <kbd>Ctrl+C</kbd>.</li>
+            <li>
+              Run the command for this computer from the project folder.
+              <div class="pin-command-list">
+                <div class="pin-command">
+                  <span>macOS / Linux</span>
+                  <code id="pin-command-posix">./scripts/run-local.sh --setup-pin</code>
+                  <button type="button" data-copy-command="pin-command-posix" data-copy-label="macOS and Linux PIN setup command" aria-label="Copy macOS and Linux PIN setup command">Copy</button>
+                </div>
+                <div class="pin-command">
+                  <span>Windows PowerShell</span>
+                  <code id="pin-command-windows">.\scripts\run-local.ps1 -SetupPin</code>
+                  <button type="button" data-copy-command="pin-command-windows" data-copy-label="Windows PIN setup command" aria-label="Copy Windows PIN setup command">Copy</button>
+                </div>
+              </div>
+            </li>
+            <li>Ghost Lap opens again with a PIN form. If this tab stayed open, press <strong>Refresh</strong>. The setup permission closes after it succeeds.</li>
+          </ol>
+          <p class="pin-guide-safety"><strong>Check the key first:</strong> leave only the intended YubiKey connected. Ghost Lap will not change an existing PIN, reset FIDO, or delete credentials.</p>
+          <details class="pin-guide-alternative">
+            <summary>Prefer Yubico Authenticator?</summary>
+            <p>Instead of step 2, open the desktop app, choose <strong>WebAuthn</strong> and the connected device, then select <strong>Set PIN</strong>. Close it, restart Ghost Lap normally, and press Refresh.</p>
+            <a href="https://docs.yubico.com/hardware/yubikey/yk-tech-manual/yk5-apps-fido.html" target="_blank" rel="noreferrer">Open Yubico’s setup guide ↗</a>
+          </details>
+        </div>
+
         <form class="setup-form" id="pin-form" hidden>
           <label id="initial-pin-label" for="initial-pin">Choose a new FIDO PIN</label>
           <div class="setup-fields">
             <input id="initial-pin" type="password" minlength="4" maxlength="63" autocomplete="new-password" placeholder="New PIN" required />
             <input id="initial-pin-confirm" type="password" minlength="4" maxlength="63" autocomplete="new-password" placeholder="Confirm PIN" aria-label="Confirm the new FIDO PIN" required />
-            <button type="submit">Set PIN</button>
+            <button id="initial-pin-submit" type="submit">Set PIN on this key</button>
           </div>
           <p id="pin-setup-note">This changes the FIDO application. Removing the PIN later requires a FIDO reset. Ghost Lap never stores it.</p>
         </form>

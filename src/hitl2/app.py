@@ -3,6 +3,9 @@ from __future__ import annotations
 import hmac
 import ipaddress
 import os
+import threading
+import time
+import webbrowser
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -22,6 +25,10 @@ from .store import SQLiteStore
 
 
 MAX_API_REQUEST_BYTES = 256 * 1024
+PIN_SETUP_LAUNCH_HINT = (
+    "stop this server, then restart once with ./scripts/run-local.sh --setup-pin "
+    r"on macOS/Linux or .\scripts\run-local.ps1 -SetupPin on Windows."
+)
 
 
 class PinRequest(BaseModel):
@@ -249,20 +256,19 @@ def create_app(
     @app.get("/api/status")
     def status():
         result = service.status()
-        result.setdefault("security", {})["initial_pin_setup_enabled"] = allow_initial_pin_setup
+        result.setdefault("security", {})["initial_pin_setup_enabled"] = bool(
+            app.state.allow_initial_pin_setup
+        )
         return result
 
     @app.post("/api/pin")
     def set_pin(body: InitialPinRequest):
-        if not allow_initial_pin_setup:
+        if not app.state.allow_initial_pin_setup:
             raise HitlError(
                 "INITIAL_PIN_SETUP_DISABLED",
-                "Browser-driven initial PIN setup is disabled for this hardware launch.",
+                "Browser-driven initial PIN setup is disabled for this launch.",
                 status_code=403,
-                hint=(
-                    "Configure the FIDO PIN with your authenticator tool, or deliberately restart "
-                    "once with HITL2_ALLOW_INITIAL_PIN=1 while only the intended key is connected."
-                ),
+                hint=PIN_SETUP_LAUNCH_HINT,
             )
         pin = body.pin.get_secret_value()
         confirm_pin = body.confirm_pin.get_secret_value()
@@ -272,7 +278,11 @@ def create_app(
                 "PIN and confirmation do not match; the key was not changed.",
                 status_code=422,
             )
-        return {"pin": service.set_initial_pin(pin)}
+        result = service.set_initial_pin(pin)
+        # The temporary mutation gate is single-use. Successful setup closes it
+        # before the browser proceeds to enrollment.
+        app.state.allow_initial_pin_setup = False
+        return {"pin": result}
 
     @app.post("/api/enroll")
     def enroll(body: PinRequest):
@@ -336,8 +346,8 @@ def _startup_device_messages(
             elif not (status.get("pin") or {}).get("configured"):
                 messages.append(
                     "[Ghost Lap] SAFETY: Browser-driven initial PIN setup is disabled. "
-                    "Configure the intended key with its authenticator tool, or deliberately "
-                    "restart once with HITL2_ALLOW_INITIAL_PIN=1 while no other keys are attached."
+                    f"Configure the intended key with its authenticator tool, or {PIN_SETUP_LAUNCH_HINT} "
+                    "Leave every other security key disconnected."
                 )
             else:
                 messages.append(
@@ -384,4 +394,29 @@ def run() -> None:
         allow_initial_pin_setup=runtime_app.state.allow_initial_pin_setup,
     ):
         print(message, flush=True)
-    uvicorn.run(runtime_app, host=host, port=port, reload=False)
+    config = uvicorn.Config(runtime_app, host=host, port=port, reload=False)
+    server = uvicorn.Server(config)
+    browser_host = f"[{host}]" if ":" in host else host
+    url = f"http://{browser_host}:{port}"
+    print(f"[Ghost Lap] Open {url}", flush=True)
+
+    if os.getenv("HITL2_OPEN_BROWSER", "").strip().lower() in {"1", "true", "yes"}:
+
+        def open_browser_when_ready() -> None:
+            for _ in range(300):
+                if server.started:
+                    try:
+                        browser = webbrowser.get()
+                        browser.open(url, new=2)
+                    except webbrowser.Error as exc:
+                        print(f"[Ghost Lap] No web browser found: {exc}", flush=True)
+                    return
+                if server.should_exit:
+                    return
+                time.sleep(0.05)
+
+        threading.Thread(target=open_browser_when_ready, daemon=True).start()
+    try:
+        server.run()
+    except KeyboardInterrupt:
+        pass

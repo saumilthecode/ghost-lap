@@ -304,11 +304,14 @@ const elements = {
   setupCard: byId("setup-card"),
   setupTitle: byId("setup-title"),
   setupDescription: byId("setup-description"),
+  pinGuide: byId("pin-guide"),
+  pinCommandButtons: document.querySelectorAll("[data-copy-command]"),
   pinForm: byId("pin-form"),
   initialPinLabel: byId("initial-pin-label"),
   pinSetupNote: byId("pin-setup-note"),
   initialPin: byId("initial-pin"),
   initialPinConfirm: byId("initial-pin-confirm"),
+  initialPinSubmit: byId("initial-pin-submit"),
   enrollForm: byId("enroll-form"),
   enrollLabel: byId("enroll-label"),
   enrollNote: byId("enroll-note"),
@@ -1007,12 +1010,14 @@ function downloadRival(ghost = state.ghost) {
   return true;
 }
 
-async function copyRivalProof(ghost = state.ghost) {
-  if (!ghost) return false;
-  const value = rivalJson(ghost);
+async function copyText(value) {
   if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-    await navigator.clipboard.writeText(value);
-    return true;
+    try {
+      await navigator.clipboard.writeText(value);
+      return true;
+    } catch {
+      // Fall through for browsers that expose the API but deny this call.
+    }
   }
   const field = document.createElement("textarea");
   field.value = value;
@@ -1024,6 +1029,11 @@ async function copyRivalProof(ghost = state.ghost) {
   const copied = document.execCommand("copy");
   field.remove();
   return copied;
+}
+
+async function copyRivalProof(ghost = state.ghost) {
+  if (!ghost) return false;
+  return copyText(rivalJson(ghost));
 }
 
 function setRivalFileStatus(message, { error = false } = {}) {
@@ -1356,6 +1366,8 @@ function statusFacts(status) {
     pin,
     connected: Boolean(hardware.connected),
     pinConfigured: Boolean(pin.configured),
+    pinMinimumLength: Number.isInteger(pin.minimum_length) ? pin.minimum_length : 4,
+    pinMaximumLength: Number.isInteger(pin.maximum_length) ? pin.maximum_length : 63,
     previewSign: Boolean(hardware.capabilities && hardware.capabilities.preview_sign),
     fido23: Boolean(hardware.capabilities && hardware.capabilities.ctap_2_3),
     enrolled: Boolean(status && status.enrolled),
@@ -1368,12 +1380,16 @@ function statusFacts(status) {
   };
 }
 
-function reportedDeviceDescription(hardware = {}) {
+function connectedDeviceLabel(hardware = {}) {
   const product = hardware.product_name || "USB FIDO authenticator";
   const firmware = hardware.firmware_version
     ? `, firmware ${hardware.firmware_version}`
     : ", firmware not reported";
-  return `${product}${firmware} (device-reported; manufacturer/model not attested by Ghost Lap)`;
+  return `${product}${firmware}`;
+}
+
+function reportedDeviceDescription(hardware = {}) {
+  return `${connectedDeviceLabel(hardware)} (device-reported; manufacturer/model not attested by Ghost Lap)`;
 }
 
 function renderStatus(status) {
@@ -1405,6 +1421,7 @@ function renderStatus(status) {
 }
 
 function renderSetup(facts) {
+  elements.pinGuide.hidden = true;
   elements.pinForm.hidden = true;
   elements.enrollForm.hidden = true;
   elements.setupCard.hidden = facts.ready || Boolean(state.ghost && !state.captureIntent);
@@ -1425,7 +1442,7 @@ function renderSetup(facts) {
     return;
   }
 
-  const deviceDescription = reportedDeviceDescription(facts.hardware);
+  const deviceDescription = connectedDeviceLabel(facts.hardware);
 
   if (!facts.mock && (!facts.fido23 || !facts.previewSign)) {
     elements.setupTitle.textContent = "This key cannot make Ghost Lap ghosts";
@@ -1434,22 +1451,29 @@ function renderSetup(facts) {
   }
 
   if (!facts.pinConfigured) {
+    const pinRange = `${facts.pinMinimumLength}–${facts.pinMaximumLength} characters`;
     elements.initialPinLabel.textContent = facts.mock
-      ? "Choose a practice PIN"
-      : "Choose a new FIDO PIN";
+      ? `Choose a practice PIN (${pinRange})`
+      : `Choose a FIDO PIN (${pinRange})`;
+    elements.initialPin.minLength = facts.pinMinimumLength;
+    elements.initialPin.maxLength = facts.pinMaximumLength;
+    elements.initialPinConfirm.minLength = facts.pinMinimumLength;
+    elements.initialPinConfirm.maxLength = facts.pinMaximumLength;
+    elements.initialPinSubmit.textContent = facts.mock ? "Set practice PIN" : "Set PIN on this key";
     elements.pinSetupNote.textContent = facts.mock
       ? "This protects only the local software practice key. It does not configure a USB authenticator, and Ghost Lap never stores the PIN."
-      : "This changes the FIDO application. Removing the PIN later requires a FIDO reset. Ghost Lap never stores it.";
+      : "Ghost Lap never stores either entry. Forgetting this PIN may require a FIDO reset, which erases FIDO credentials.";
     elements.setupTitle.textContent = facts.mock
       ? "Create the software practice key"
       : facts.initialPinSetupEnabled
-        ? "Set the key’s FIDO PIN"
-        : "Configure this key’s FIDO PIN first";
+        ? "PIN setup mode is on"
+        : "This key needs a FIDO PIN";
     elements.setupDescription.textContent = facts.mock
       ? "Practice mode keeps clearly labeled software-only key material in this local data directory. No USB key is contacted."
       : facts.initialPinSetupEnabled
-        ? `Connected: ${deviceDescription}. Leave only this intended key connected. Set PIN changes this key’s FIDO application; Ghost Lap never resets it or deletes credentials.`
-        : `Connected: ${deviceDescription}. For safety, browser-driven initial PIN setup is off. Use your authenticator’s management tool, or deliberately restart once with HITL2_ALLOW_INITIAL_PIN=1 while only this key is attached.`;
+        ? `Connected: ${deviceDescription}. Check the physical key, then set its first FIDO PIN below.`
+        : `Connected: ${deviceDescription}. Ghost Lap keeps initial FIDO PIN setup off during normal play.`;
+    elements.pinGuide.hidden = facts.mock || facts.initialPinSetupEnabled;
     elements.pinForm.hidden = !facts.initialPinSetupEnabled;
     return;
   }
@@ -4213,6 +4237,30 @@ elements.keepRivalButton.addEventListener("click", () => {
   setPanel(elements.introPanel);
   setAnnouncer("Your current verified rival is still waiting.");
 });
+
+for (const button of elements.pinCommandButtons) {
+  button.addEventListener("click", async () => {
+    const command = byId(button.dataset.copyCommand);
+    const label = button.dataset.copyLabel || "PIN setup command";
+    if (!command) return;
+    const originalLabel = button.textContent;
+    try {
+      const copied = await copyText(command.textContent.trim());
+      if (!copied) throw new Error("Clipboard unavailable");
+      button.textContent = "Copied";
+      setAnnouncer(`${label} copied.`);
+    } catch {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(command);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      button.textContent = "Selected";
+      setAnnouncer(`${label} selected. Copy it with your browser or keyboard.`);
+    }
+    window.setTimeout(() => { button.textContent = originalLabel; }, 1400);
+  });
+}
 
 elements.pinForm.addEventListener("submit", async (event) => {
   event.preventDefault();
