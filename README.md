@@ -6,9 +6,6 @@ Ghost Lap is a one-button runner where a YubiKey turns one captured lap into a
 tamper-evident rival. Enter your FIDO PIN, touch the key once, then race that
 same signed ghost as many times as you want.
 
-> Hackathon prototype: the YubiKey signing path is real. The game itself is a
-> trusted-local experience, not a global anti-cheat system.
-
 ![Ghost Lap ready with a physical YubiKey](docs/images/ghost-lap-hardware-ready.png)
 
 ## Project title and description
