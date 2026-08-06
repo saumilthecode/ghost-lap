@@ -55,6 +55,25 @@ The signature covers the baseline route, input ticks, finish tick, and signer
 metadata. Later route adaptations, scores, medals, streaks, and PB Echoes are
 local game state and are not signed.
 
+### What is actually stored
+
+Ghost Lap does not use the YubiKey as a flash drive: no replay, time, jump list,
+carrot state, or score is written to it.
+
+| Location | Persistent data |
+| --- | --- |
+| YubiKey | Authenticator-protected secrets needed to recognize the WebAuthn credential and reconstruct the `previewSign` signing key. The credential is requested with `residentKey: discouraged`, and the draft permits secret-related state to be wrapped in opaque, authenticator-bound handles stored off-device. Signing may advance its WebAuthn counter, but no per-rival record or key slot is created. |
+| Local broker (`~/.hitl2/state.sqlite3` by default) | The credential ID and public data, ARKG master public seed, `previewSign` key handle, and enrollment attestation. The PIN is used only for the ceremony and is never persisted. Explicit software practice mode instead keeps its mock private key here. |
+| Browser profile (`localStorage`) | The signed rival: replay ticks, finish, canonical payload, fresh ARKG derivation evidence, derived public key, signatures, scores, and progress. |
+
+For each signed rival, the broker generates fresh 32-byte ARKG input and a
+payload-bound context, then sends the saved handles, `SHA-256(payload)`, and
+ARKG arguments to the YubiKey. After PIN verification and touch, the
+authenticator reconstructs the matching private run key, signs the digest, and
+returns the signature. The per-rival key is transient; the raw private key never
+reaches Ghost Lap. This is why an incognito window starts empty and merely
+plugging the key into another browser does not restore rivals.
+
 ![Verified Rival DNA, previewSign and ARKG evidence, and a one-tick edit rejected locally](docs/images/ghost-lap-tamper-rejected.png)
 
 *Changing one accepted input from 1.32s to 1.34s breaks the signed replay
