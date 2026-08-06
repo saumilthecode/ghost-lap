@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f5edcf" />
+    <meta
+      name="description"
+      content="Ghost Lap is a tiny runner where a YubiKey 5.8 turns your first run into the ghost you race next."
+    />
+    <title>Ghost Lap</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/styles.css?v=ghost-lap-21" />
+    <script src="/app.js?v=ghost-lap-21" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#game">Skip to the game</a>
+
+    <div class="mock-banner" id="mock-banner" role="alert" hidden>
+      Software practice mode — this ghost is not signed by a physical YubiKey.
+    </div>
+
+    <main class="page-shell">
+      <header class="game-header">
+        <div class="title-lockup">
+          <p class="kicker">A YubiKey 5.8 mini-game</p>
+          <h1>Ghost Lap</h1>
+          <p>Make one rival. Chase it as long as you like.</p>
+        </div>
+
+        <div class="device-chip is-checking" id="device-chip" role="status" aria-live="polite">
+          <span class="device-dot" aria-hidden="true"></span>
+          <span id="device-chip-text">Looking for your key…</span>
+          <button class="chip-button" id="refresh-status" type="button">Refresh</button>
+        </div>
+      </header>
+
+      <section class="game-card" id="game" aria-labelledby="game-heading">
+        <h2 class="sr-only" id="game-heading">Ghost Lap one-button runner</h2>
+
+        <div class="canvas-wrap" id="canvas-wrap">
+          <canvas
+            id="game-canvas"
+            width="960"
+            height="540"
+            tabindex="0"
+            aria-label="Ghost Lap runner. During a lap, press Space or the up arrow, click, or tap to jump."
+            aria-describedby="controls-note game-announcer"
+          ></canvas>
+
+          <div class="game-hud" id="game-hud" hidden>
+            <span class="lap-pill" id="lap-label">First lap</span>
+            <strong class="game-clock" id="game-clock">0.00</strong>
+            <span class="carrot-pill">🥕 <b id="carrot-count">0</b></span>
+            <span class="burst-pill" id="burst-pill"><span id="burst-label">Boost 0/3</span> <i><b id="burst-fill"></b></i></span>
+            <span class="jump-hint">Tap to jump · once more in air to flap</span>
+          </div>
+
+          <section class="canvas-panel intro-panel" id="intro-panel">
+            <div class="panel-doodle" aria-hidden="true">↟</div>
+            <p class="panel-kicker" id="intro-kicker">Pick a trail · about 20 seconds</p>
+            <h2 id="intro-title">Leave a trail worth chasing.</h2>
+            <p id="intro-copy">Choose where to make your rival. Run once, then touch the connected key to sign the replay digest.</p>
+            <div class="trail-picker" id="capture-route-picker" role="group" aria-label="Choose a capture trail">
+              <button id="previous-route" type="button" aria-label="Previous trail">‹</button>
+              <div class="trail-ticket" aria-live="polite">
+                <span><b id="capture-route-count">1 / 6</b> · <b id="capture-route-direction">→</b></span>
+                <strong id="capture-route-name">Original Trail</strong>
+                <small id="capture-route-hint">Classic logs, hay, and mushroom clumps.</small>
+                <span class="trail-medals" id="capture-route-medals" hidden>Medals · ○ Rival · ○ Carrots · ○ Clean</span>
+              </div>
+              <button id="next-route" type="button" aria-label="Next trail">›</button>
+            </div>
+            <button class="big-button" id="start-button" type="button" disabled>Checking the meadow…</button>
+            <p class="button-note" id="start-note">One compatible enrolled key is needed to make a hardware ghost.</p>
+          </section>
+
+          <section class="canvas-panel sign-panel" id="sign-panel" hidden>
+            <div class="ghost-bottle" aria-hidden="true">
+              <span class="bottle-cork"></span>
+              <span class="bottle-ghost">●</span>
+            </div>
+            <p class="panel-kicker"><span id="sign-kicker-label">First lap complete</span> · <span id="first-lap-time">—</span></p>
+            <h2>Sign this replay.</h2>
+            <p id="sign-copy">Enter the connected key’s FIDO PIN, then touch it. Ghost Lap hashes the replay; previewSign signs its 32-byte digest.</p>
+            <form class="sign-form" id="sign-form">
+              <label class="sr-only" for="sign-pin">FIDO PIN</label>
+              <input
+                id="sign-pin"
+                type="password"
+                minlength="4"
+                maxlength="63"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="FIDO PIN"
+                required
+              />
+              <button class="big-button" id="sign-button" type="submit">Sign replay · PIN + touch</button>
+            </form>
+            <button class="quiet-button keep-rival-button" id="keep-rival-button" type="button" hidden>Keep my current rival</button>
+            <p class="button-note" id="sign-note">The replay is sent only to the local broker; previewSign receives its digest and ARKG arguments. The PIN is cleared before the game waits for touch.</p>
+          </section>
+
+          <section class="canvas-panel ceremony-panel" id="ceremony-panel" hidden aria-live="assertive">
+            <div class="touch-status" aria-hidden="true"><span></span><b id="ceremony-status">Waiting for key touch</b></div>
+            <p class="panel-kicker" id="ceremony-kicker">Signing replay digest</p>
+            <h2 id="ceremony-title">Touch the connected key.</h2>
+            <p id="ceremony-copy">The replay stays on this device and goes only to the local broker. previewSign receives its 32-byte SHA-256 digest and ARKG arguments—not the replay itself.</p>
+          </section>
+
+          <section class="canvas-panel finish-panel" id="finish-panel" hidden>
+            <div class="finish-ribbon" id="finish-ribbon" aria-hidden="true">★</div>
+            <p class="panel-kicker" id="finish-kicker">Heat complete</p>
+            <h2 id="finish-heading">Heat complete.</h2>
+            <div class="score-line">
+              <span>You <strong id="player-time">—</strong></span>
+              <span><b id="rival-score-label">Signed rival</b><strong id="ghost-time">—</strong></span>
+            </div>
+            <p class="heat-stats" id="heat-stats">Heat 1 · Streak 0 · Best —</p>
+            <div class="medal-row" id="medal-row" aria-label="Trail medals" hidden>
+              <span id="medal-rival"><b>○</b> Rival</span>
+              <span id="medal-carrots"><b>○</b> All carrots</span>
+              <span id="medal-clean"><b>○</b> Clean run</span>
+            </div>
+            <div class="finish-actions">
+              <button class="big-button" id="race-again-button" type="button">Next heat</button>
+              <button class="promote-pb-button" id="promote-pb-button" type="button" hidden>Make this PB the rival · PIN + touch</button>
+              <button class="quiet-button" id="retry-route-button" type="button">Race this route again</button>
+              <button class="quiet-button" id="choose-trail-button" type="button" hidden>Choose trail</button>
+              <button class="quiet-button" id="view-proof-button" type="button">View signed proof</button>
+              <button class="quiet-button" id="new-ghost-button" type="button">Make a new rival</button>
+            </div>
+            <p class="button-note" id="finish-note">Next heat adapts the same signed input tape. No PIN or touch.</p>
+          </section>
+
+          <div class="countdown" id="countdown" aria-hidden="true" hidden>3</div>
+          <div class="bonk" id="bonk" aria-hidden="true" hidden>bonk!</div>
+          <div class="late-rabbit" id="late-rabbit" aria-hidden="true" hidden>
+            <img src="/assets/late-rabbit.webp" alt="" width="320" height="427" />
+            <span>you’re late.</span>
+          </div>
+        </div>
+
+        <div class="below-canvas">
+          <p id="controls-note"><strong>One button:</strong> jump, then flap. Routes may run left or right. Puddles and roots slow; pink caps spring; blue ice boosts. Dashed line = average pace for this route's PB.</p>
+          <p class="announcer" id="game-announcer" role="status" aria-live="polite">The meadow is getting ready.</p>
+          <button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="false" aria-label="Game sounds">Sound off</button>
+        </div>
+
+        <details class="rival-file-tools" id="rival-file-tools">
+          <summary>Move a signed rival between browser profiles</summary>
+          <div class="rival-file-body">
+            <p>Export the locally identity-pinned public proof, then import it in another profile using this same Ghost Lap installation. It contains linkable credential material but no PIN or private key. Import verifies locally before replacing anything; it never contacts the key.</p>
+            <div class="rival-file-actions">
+              <button id="import-rival-button" type="button">Import rival</button>
+              <button id="export-rival-button" type="button" disabled>Export rival</button>
+              <button id="forget-rival-button" type="button" disabled>Forget this rival + stats</button>
+              <input id="import-rival-file" type="file" accept="application/json,.json" hidden />
+            </div>
+            <p>Forgetting clears this browser profile only. It does not change the key or erase the broker’s local public enrollment.</p>
+            <p class="rival-file-status" id="rival-file-status" role="status" aria-live="polite" hidden></p>
+          </div>
+        </details>
+      </section>
+
+      <section class="setup-card" id="setup-card" tabindex="-1" aria-labelledby="setup-title" hidden>
+        <div class="setup-heading">
+          <p class="kicker">Before the first lap</p>
+          <h2 id="setup-title">Get the key ready</h2>
+          <p id="setup-description">Checking the connected authenticator.</p>
+        </div>
+
+        <form class="setup-form" id="pin-form" hidden>
+          <label id="initial-pin-label" for="initial-pin">Choose a new FIDO PIN</label>
+          <div class="setup-fields">
+            <input id="initial-pin" type="password" minlength="4" maxlength="63" autocomplete="new-password" placeholder="New PIN" required />
+            <input id="initial-pin-confirm" type="password" minlength="4" maxlength="63" autocomplete="new-password" placeholder="Confirm PIN" aria-label="Confirm the new FIDO PIN" required />
+            <button type="submit">Set PIN</button>
+          </div>
+          <p id="pin-setup-note">This changes the FIDO application. Removing the PIN later requires a FIDO reset. Ghost Lap never stores it.</p>
+        </form>
+
+        <form class="setup-form" id="enroll-form" hidden>
+          <label id="enroll-label" for="enroll-pin">Enroll this key for Ghost Lap</label>
+          <div class="setup-fields setup-fields-short">
+            <input id="enroll-pin" type="password" minlength="4" maxlength="63" autocomplete="off" placeholder="FIDO PIN" required />
+            <button type="submit">Enroll · PIN + touch</button>
+          </div>
+          <p id="enroll-note">This asks the connected authenticator to create WebAuthn and previewSign key material. Ghost Lap keeps the public enrollment data locally. The PIN is never stored.</p>
+        </form>
+      </section>
+
+      <details class="key-story" id="key-story" hidden>
+        <summary><span>About this rival</span><span class="proof-badge" id="proof-badge">Verified</span></summary>
+        <div class="key-story-body">
+          <p id="key-story-copy">Ghost details appear after the first lap is signed.</p>
+          <p class="key-storage-note"><strong>Replay location</strong><span id="proof-key-storage">Saved in this browser profile—not in cookies or on the YubiKey.</span></p>
+          <div class="rival-dna" id="rival-dna">
+            <canvas id="rival-dna-sigil" width="80" height="80" aria-hidden="true"></canvas>
+            <p><small>Rival DNA</small><strong id="rival-dna-name">—</strong><span id="rival-dna-copy">A cosmetic look generated from the rival’s public signing-key fingerprint.</span></p>
+          </div>
+          <ol class="proof-flow" id="proof-flow" aria-label="What the hardware authenticator did">
+            <li><b>1 · Derive</b><span>Ghost Lap made a fresh ARKG public run key for this rival.</span></li>
+            <li><b>2 · Sign</b><span>previewSign accepted the 32-byte replay digest after PIN + touch.</span></li>
+            <li><b>3 · Verify</b><span>P-256 and WebAuthn proofs now check locally without contacting the key.</span></li>
+          </ol>
+          <dl class="proof-list">
+            <div><dt>Replay</dt><dd id="proof-replay">—</dd></div>
+            <div><dt>Signer</dt><dd id="proof-signer">—</dd></div>
+            <div><dt>previewSign profile</dt><dd id="proof-profile">—</dd></div>
+            <div><dt>Signature</dt><dd id="proof-algorithm">—</dd></div>
+            <div><dt>Confirmed</dt><dd id="proof-presence">—</dd></div>
+            <div><dt>Checked</dt><dd id="proof-verification">—</dd></div>
+            <div><dt>Run</dt><dd id="proof-run">—</dd></div>
+            <div><dt>Payload</dt><dd id="proof-payload">—</dd></div>
+            <div class="proof-hash"><dt>Payload SHA-256</dt><dd><code id="proof-digest">—</code><small>Fingerprint of the exact payload covered by the signature.</small></dd></div>
+            <div><dt>Derived public key</dt><dd id="proof-derived">—</dd></div>
+          </dl>
+          <div class="proof-test">
+            <p><strong>Can this replay be edited?</strong><span>Change one captured input in a disposable copy and check it locally.</span></p>
+            <button id="tamper-test-button" type="button">Change one input</button>
+          </div>
+          <p class="proof-test-result" id="tamper-test-result" role="status" aria-live="polite" hidden></p>
+          <details class="proof-technical">
+            <summary>More verification details</summary>
+            <dl>
+              <div><dt>ARKG derivation</dt><dd id="proof-derivation">—</dd></div>
+              <div><dt>WebAuthn counter</dt><dd id="proof-counter">—</dd></div>
+              <div><dt>Run-key SHA-256</dt><dd><code id="proof-fingerprint">—</code></dd></div>
+            </dl>
+          </details>
+          <details class="proof-raw">
+            <summary>Raw public proof artifact</summary>
+            <p>Public and linkable: this includes credential IDs, public COSE keys, signatures, WebAuthn evidence, ARKG arguments, and the canonical payload. It contains no PIN or private key, but it can identify this locally enrolled credential.</p>
+            <div class="proof-raw-actions">
+              <button id="copy-proof-button" type="button">Copy JSON</button>
+              <button id="download-proof-button" type="button">Download JSON</button>
+            </div>
+            <pre id="proof-raw-json" tabindex="0">—</pre>
+          </details>
+          <p class="honest-note">The signature covers the captured course, timing, finish tick, and accepted inputs. Later routes, scores, and streaks are local game data. It detects edits to the capture; it is not a global anti-cheat service.</p>
+        </div>
+      </details>
+    </main>
+  </body>
+</html>
